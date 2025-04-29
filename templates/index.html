@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PbImageGen</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <style>
+    :root {
+      --bg: #f4f4f9;
+      --text: #111;
+      --input-bg: #fff;
+      --accent: #7b3eff;
+    }
+
+    body.dark {
+      --bg: #1a1a2e;
+      --text: #f4f4f4;
+      --input-bg: #2e2e3e;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.3s, color 0.3s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+    }
+
+    p {
+      font-size: 1.2rem;
+      color: gray;
+    }
+
+    .input-box {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    input, select, button, textarea {
+      padding: 0.8rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      outline: none;
+      background: var(--input-bg);
+      color: var(--text);
+    }
+
+    button {
+      background: var(--accent);
+      color: white;
+      cursor: pointer;
+      transition: 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    #gallery {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 2rem;
+    }
+
+    .gallery-item {
+      position: relative;
+    }
+
+    .gallery-item img {
+      width: 200px;
+      height: auto;
+      border-radius: 10px;
+    }
+
+    .gallery-item .btns {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      display: flex;
+      gap: 5px;
+    }
+
+    .btns button {
+      padding: 6px;
+      font-size: 0.9rem;
+      border-radius: 6px;
+    }
+
+    .loader {
+      display: none;
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid var(--accent);
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 2rem auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .footer {
+      margin-top: 3rem;
+      color: gray;
+    }
+
+    .footer button {
+      background: none;
+      color: var(--accent);
+      border: none;
+      text-decoration: underline;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .dark-toggle {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      font-size: 1.4rem;
+      cursor: pointer;
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+  <button class="dark-toggle" onclick="toggleDark()" id="darkToggle">
+    <i class="fas fa-moon"></i>
+  </button>
+
+  <h1>Create art from words</h1>
+  <p>Type your description, and let AI bring it to life — lightning fast, no login needed!</p>
+
+  <div class="input-box">
+    <input id="prompt" type="text" placeholder="Write your prompt" style="width: 300px;">
+    <input id="negative" type="text" placeholder="Negative prompt (optional)" style="width: 300px;">
+    <select id="style" class="rounded p-2 bg-white dark:bg-gray-900 border dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+      <option value="">None</option>
+      <option value="Realistic">Realistic</option>
+      <option value="Anime">Anime</option>
+      <option value="Cyberpunk">Cyberpunk</option>
+      <option value="Fantasy">Fantasy</option>
+      <option value="Photorealistic">Photorealistic</option>
+      <option value="3D rendering, Octane render">3D Render</option>
+      <option value="oil painting">Oil Painting</option>
+      <option value="pixel art">Pixel Art</option>
+      <option value="pencil sketch">Sketch</option>
+      <option value="watercolor painting">Watercolor</option>
+      <option value="comic book style">Comic Book</option>
+      <option value="vaporwave aesthetic">Vaporwave</option>
+      <option value="steampunk">Steampunk</option>
+      <option value="film noir">Noir</option>
+      <option value="synthwave">Synthwave</option>
+      <option value="minimalist">Minimalist</option>
+    </select>       
+    <select id="aspect">
+      <option value="square">Square (1:1)</option>
+      <option value="portrait">Portrait (3:4)</option>
+      <option value="landscape">Landscape (16:9)</option>
+    </select>
+    <button onclick="generateImage()">
+      <i class="fas fa-wand-magic-sparkles"></i> Generate
+    </button>
+  </div>
+
+  <div class="loader" id="loader"></div>
+
+  <div id="gallery"></div>
+
+  <div class="footer">
+    Created by <button onclick="window.open('https://xdevman.is-a.dev', '_blank')">xdevman1</button>
+  </div>
+  
+<script>
+  function toggleDark() {
+    const body = document.body;
+    body.classList.toggle('dark');
+    const icon = document.getElementById('darkToggle').querySelector('i');
+    icon.className = body.classList.contains('dark') ? 'fas fa-sun' : 'fas fa-moon';
+  }
+
+  function generateImage() {
+    const promptInput = document.getElementById("prompt");
+    const style = document.getElementById("style").value;
+    const aspect = document.getElementById("aspect").value;
+    const negative = document.getElementById("negative").value;
+
+    if (!promptInput.value.trim()) {
+      alert("Please enter a prompt.");
+      return;
+    }
+
+    document.getElementById("loader").style.display = "block";
+
+    fetch("/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt: promptInput.value,
+        negative,
+        aspect,
+        style
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("loader").style.display = "none";
+      if (data.error) {
+        alert("Error generating image.");
+        return;
+      }
+
+      const url = data.url;
+      const div = document.createElement("div");
+      div.className = "gallery-item";
+      div.innerHTML = `
+        <img src="${url}" alt="AI Art">
+        <div class="btns">
+          <button onclick="downloadImage('${url}')"><i class="fas fa-download"></i></button>
+          <button onclick="copyURL('${url}')"><i class="fas fa-copy"></i></button>
+        </div>
+      `;
+      document.getElementById("gallery").prepend(div);
+    })
+    .catch(err => {
+      document.getElementById("loader").style.display = "none";
+      alert("Server error. Check console.");
+      console.error(err);
+    });
+  }
+  
+  function downloadImage(url) {
+  fetch(url)
+    .then(response => response.blob())
+    .then(blob => {
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = 'pbgenerated.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    })
+    .catch(err => {
+      alert("Failed to download image.");
+      console.error("Download error:", err);
+    });
+}
+
+  function copyURL(url) {
+    navigator.clipboard.writeText(url).then(() => {
+      alert("Image URL copied!");
+    });
+  }
+</script>
+
+</body>
+</html>
