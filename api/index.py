@@ -39,6 +39,3 @@ def generate():
     except Exception as e:
         print("Image generation error:", e)
         return jsonify({"error": "Image generation failed"}), 500
-
-if __name__ == "__main__":
-    app.run(debug=True)
